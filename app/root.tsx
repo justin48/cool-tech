@@ -15,7 +15,7 @@ export default function App() {
         <Links/>
       </head>
       <body>
-        <h1>Technologies that are cool to learn.</h1>
+        <h1>Technologies that are cool to learn...</h1>
         <Outlet />
 
         <Scripts />
