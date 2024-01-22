@@ -39,12 +39,10 @@ pipeline {
 def dockerBuild(env, buildNumber, imageTagName) {
     versionNumber = getLatestVersionTag()
     sh "docker build -t ${imageTagName}-${env}:${versionNumber}.${buildNumber} ."
-    sh "docker push ${imageTagName}-${env}:${versionNumber}.${buildNumber}"
 }
 
 def deployment(env, buildNumber, imageTagName, containerName, host) {
     undeploy(containerName)
-    sh "docker pull ${imageTagName}-${env}:${versionNumber}.${buildNumber}"
     sh "docker run --restart=always -d -p 3005:3000 --name ${containerName} ${imageTagName}-${env}:${versionNumber}.${buildNumber}"
 }
 
