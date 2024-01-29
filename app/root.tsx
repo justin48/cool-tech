@@ -1,5 +1,6 @@
 import os from "node:os";
 import {
+  Link,
   Links,
   LiveReload,
   Meta,
@@ -25,17 +26,32 @@ export async function loader() {
 export default function App() {
   const data = useLoaderData<typeof loader>();
   return (
-    <html>
+    <html lang="en" className="h-full overflow-x-hidden">
       <head>
         <Links />
       </head>
-      <body>
-        <LiveReload />
-        <h1 className="p-8 text-x1">sweet!!!</h1>
-        <p>sdfsd</p>
-        <p>Built with ♥️ by {data.username}</p>
-        <Outlet />
+      <body className="flex h-full flex-col justify-between bg-background text-foreground">
+        <header className="container mx-auto py-6">
+          <nav className="flex justify-between">
+            <Link to="">
+              <div className="font-light">Epic</div>
+              <div className="font-bold">Technologies!!</div>
+            </Link>
+          </nav>
+        </header>
+        <div className="flex-1">
+          <Outlet />
+        </div>
 
+        <div className="container mx-auto flex justify-between">
+          <Link to="/">
+            <div className="font-light">Epic</div>
+            <div className="font-bold">Technologies</div>
+          </Link>
+          <p>Build with ♥️ by {data.username}</p>
+        </div>
+        <div className="h-5" />
+        <LiveReload />
         <Scripts />
       </body>
     </html>
