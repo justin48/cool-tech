@@ -1,9 +1,10 @@
-import { Link } from "@remix-run/react";
+import { Link, useParams } from "@remix-run/react";
 
-export default function KodyProfileRoute() {
+export default function ProfileRoute() {
+  const params = useParams();
   return (
     <div className="container mb-48 mt-36 border-4 border-green-500">
-      <h1 className="text-h1">Kody</h1>
+      <h1 className="text-h1">{params.username}</h1>
       <Link to="tech" className="underline">
         Technologies!!!
       </Link>

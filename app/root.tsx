@@ -33,7 +33,7 @@ export default function App() {
       <body className="flex h-full flex-col justify-between bg-background text-foreground">
         <header className="container mx-auto py-6">
           <nav className="flex justify-between">
-            <Link to="">
+            <Link to="/">
               <div className="font-light">Epic</div>
               <div className="font-bold">Technologies!!</div>
             </Link>
