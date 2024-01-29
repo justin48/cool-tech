@@ -48,7 +48,7 @@ export default function App() {
             <div className="font-light">Epic</div>
             <div className="font-bold">Technologies</div>
           </Link>
-          <p>Build with ♥️ by {data.username}</p>
+          <p>Built with ♥️ by {data.username}</p>
         </div>
         <div className="h-5" />
         <LiveReload />
