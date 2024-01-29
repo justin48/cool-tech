@@ -13,7 +13,6 @@ export async function loader({ params }: LoaderFunctionArgs) {
   });
 
   invariantResponse(user, "User not found", { status: 404 });
-
   return json({
     user: { name: user.name, username: user.username },
   });
