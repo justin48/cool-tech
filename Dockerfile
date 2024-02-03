@@ -19,14 +19,13 @@ COPY . .
 RUN npx remix build
 
 # Stage 2: Setup the runtime environment
-FROM node:18-alpine
+FROM node:16-alpine
 
 # Set the working directory
 WORKDIR /app
 
 # Copy built assets from the builder stage
 COPY --from=builder /app/build /app/build
-COPY --from=builder /app/build/index.js /app/build/index.js
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/public /app/public
