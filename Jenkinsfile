@@ -68,3 +68,5 @@ def getLatestVersionTag() {
     def versionTag = readFile('versionTag').trim()
     return versionTag
 }
+
+}
