@@ -57,7 +57,7 @@ def undeploy(containerName) {
 
 def cleanIntermediateImages() {
     try {
-        sh 'docker rmi ${docker images | grep \"^<none>\" | awk \"{print $3}")'
+        sh 'docker rmi $(docker images -f "dangling=true" -q)'
     } catch (e) {
         echo "Had trouble deleting all unnecessary intermediary docker images. Error message: ${e.getMessage()} \nError: ${e}"
     }
@@ -67,6 +67,4 @@ def getLatestVersionTag() {
     sh 'git describe --abbrev=0 --tags | tee versionTag'
     def versionTag = readFile('versionTag').trim()
     return versionTag
-}
-
 }
