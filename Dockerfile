@@ -26,7 +26,7 @@ WORKDIR /app
 
 # Copy built assets from the builder stage
 COPY --from=builder /app/build /app/build
-COPY --from=builder /app/build/index.js.map /app/build/index.js.map
+COPY --from=builder /app/build/index.js /app/build/index.js
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/public /app/public
