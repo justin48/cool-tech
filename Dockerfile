@@ -19,7 +19,7 @@ COPY . .
 RUN npx remix build
 
 # Stage 2: Setup the runtime environment
-FROM node:16-alpine
+FROM node:18-alpine
 
 # Set the working directory
 WORKDIR /app
