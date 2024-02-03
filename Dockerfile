@@ -15,7 +15,8 @@ RUN npm install
 COPY . .
 
 # Build your app
-RUN npm run build
+#RUN npm run build
+RUN npx remix build
 
 # Stage 2: Setup the runtime environment
 FROM node:18-alpine
@@ -24,10 +25,10 @@ FROM node:18-alpine
 WORKDIR /app
 
 # Copy built assets from the builder stage
-COPY --from=builder /app/build /app/build
 COPY --from=builder /app/build ./build
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/public /app/public
 
 # Set the environment to production
 ENV NODE_ENV production
