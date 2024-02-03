@@ -14,7 +14,13 @@ pipeline {
     agent any
 
     stages {
-        stage('Build') {
+        stage('Build Binaries') {
+            steps {
+                echo 'Building Binaries'
+                sh 'npx remix build'
+            }
+        }
+        stage('Build Docker Image') {
             steps {
                 echo 'Building....'
                 dockerBuild('prod', "${buildNumber}", "${imageTagName}")
