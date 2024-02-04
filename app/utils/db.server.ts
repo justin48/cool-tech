@@ -115,9 +115,9 @@ export const db = singleton("db", () => {
     },
   ];
 
-  for (const note of kodyTechnologies) {
+  for (const tech of kodyTechnologies) {
     db.tech.create({
-      ...note,
+      ...tech,
       owner: kody,
     });
   }
