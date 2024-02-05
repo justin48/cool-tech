@@ -7,7 +7,7 @@ import {
 } from "@remix-run/react";
 import { cn, invariantResponse } from "#app/utils/misc.tsx";
 import { json, LoaderFunctionArgs } from "@remix-run/node";
-import { db } from "#/app/utils/db.server.ts";
+import { db } from "#app/utils/db.server.ts";
 
 export async function loader({ params }: LoaderFunctionArgs) {
   const owner = db.user.findFirst({
