@@ -17,6 +17,7 @@ pipeline {
         stage('Build Binaries') {
             steps {
                 echo 'Building Binaries'
+                sh 'npm install'
                 sh 'npx remix build'
             }
         }
