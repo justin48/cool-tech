@@ -23,7 +23,7 @@ export default function ProfileRoute() {
   return (
     <div className="container mb-48 mt-36">
       <h1 className="text-h1">{data.user.name ?? data.user.username}</h1>
-      <Link to="tech" className="underline">
+      <Link to="tech" className="underline" prefetch="intent">
         Technologies!!
       </Link>
     </div>

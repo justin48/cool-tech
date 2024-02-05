@@ -54,6 +54,8 @@ export default function TechRoute() {
                 <li key={tech.id} className="p-1 pr-0">
                   <NavLink
                     to={tech.id}
+                    preventScrollReset
+                    prefetch="intent"
                     className={({ isActive }) =>
                       cn(navLinkDefaultClassName, isActive && "bg-accent")
                     }

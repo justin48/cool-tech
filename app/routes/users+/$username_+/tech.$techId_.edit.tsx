@@ -1,4 +1,9 @@
-import { Form, useLoaderData } from "@remix-run/react";
+import {
+  Form,
+  useFormAction,
+  useLoaderData,
+  useNavigation,
+} from "@remix-run/react";
 import { json, LoaderFunctionArgs, redirect } from "@remix-run/node";
 import { db } from "#app/utils/db.server.ts";
 import { invariantResponse } from "#app/utils/misc.tsx";
@@ -8,6 +13,7 @@ import { Button } from "#app/components/ui/button.tsx";
 import { Input } from "#app/components/ui/input.tsx";
 import { Label } from "#app/components/ui/label.tsx";
 import { Textarea } from "#app/components/ui/textarea.tsx";
+import { StatusButton } from "#app/components/ui/status-button.tsx";
 
 export async function loader({ params }: LoaderFunctionArgs) {
   const tech = db.tech.findFirst({
@@ -42,6 +48,12 @@ export async function action({ request, params }: LoaderFunctionArgs) {
 
 export default function TechEdit() {
   const data = useLoaderData<typeof loader>();
+  const navigation = useNavigation();
+  const formAction = useFormAction();
+  const isSubmitting =
+    navigation.state !== "idle" &&
+    navigation.formMethod === "POST" &&
+    navigation.formAction === formAction;
 
   return (
     <Form
@@ -62,7 +74,13 @@ export default function TechEdit() {
         <Button variant="destructive" type="reset">
           Reset
         </Button>
-        <Button type="submit">Submit</Button>
+        <StatusButton
+          type="submit"
+          disabled={isSubmitting}
+          status={isSubmitting ? "pending" : "idle"}
+        >
+          Submit
+        </StatusButton>
       </div>
     </Form>
   );

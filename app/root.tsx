@@ -6,11 +6,13 @@ import {
   Meta,
   Outlet,
   Scripts,
+  ScrollRestoration,
   useLoaderData,
 } from "@remix-run/react";
 import { json, type LinksFunction } from "@remix-run/node";
 import faviconAssetUrl from "./assets/favicon.svg";
 import tailwindStyleSheetUrl from "./styles/tailwind.css";
+import { getEnv } from "#app/utils/env.server.ts";
 
 export const links: LinksFunction = () => {
   return [
@@ -20,7 +22,7 @@ export const links: LinksFunction = () => {
 };
 
 export async function loader() {
-  return json({ username: os.userInfo().username });
+  return json({ username: os.userInfo().username, ENV: getEnv() });
 }
 
 export default function App() {
@@ -51,6 +53,12 @@ export default function App() {
           <p>Built with ♥️ by {data.username}</p>
         </div>
         <div className="h-5" />
+        <ScrollRestoration />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.ENV = ${JSON.stringify(data.ENV)}`,
+          }}
+        />
         <LiveReload />
         <Scripts />
       </body>
