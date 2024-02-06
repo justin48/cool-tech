@@ -30,9 +30,10 @@ export default function ProfileRoute() {
   );
 }
 
-export const meta: MetaFunction = () => {
+export const meta: MetaFunction<typeof loader> = ({ data, params }) => {
+  const displayName = data?.user.name ?? params.username;
   return [
-    { title: "Profile | Epic Tech" },
-    { content: "Checkout this cool epic Tech profile!" },
+    { title: `${displayName} | Epic Tech!` },
+    { content: `Check out ${displayName}'s Epic Profile!!` },
   ];
 };
