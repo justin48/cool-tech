@@ -1,7 +1,7 @@
 export default function Index() {
   return (
     <div className="container text-center">
-      <h1 className="my-8 text-h1">Epic Technologies on Index Page!</h1>
+      <h1 className="my-8 text-h1">Epic Technologies</h1>
       <p>
         <span className="inline-flex items-center justify-center gap-2 rounded-xl bg-muted px-8 py-4 text-body-lg text-muted-foreground">
           <span>Built with the EPIC STACK</span>
