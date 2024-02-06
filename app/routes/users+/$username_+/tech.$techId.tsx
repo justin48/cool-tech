@@ -1,10 +1,17 @@
-import { Form, Link, useLoaderData, useParams } from "@remix-run/react";
+import {
+  Form,
+  Link,
+  MetaFunction,
+  useLoaderData,
+  useParams,
+} from "@remix-run/react";
 import { json, LoaderFunctionArgs, redirect } from "@remix-run/node";
 import { db } from "#app/utils/db.server.ts";
 import { floatingToolbarClassName } from "#app/components/floating-toolbar.tsx";
 import { Button } from "#app/components/ui/button.tsx";
 import { invariantResponse } from "#app/utils/misc.tsx";
 import React from "react";
+import { type loader as techLoader } from "./tech.tsx";
 
 export async function loader({ params }: LoaderFunctionArgs) {
   const tech = db.tech.findFirst({
@@ -62,3 +69,25 @@ export default function SomeTechId() {
     </div>
   );
 }
+
+export const meta: MetaFunction<
+  typeof loader,
+  { "routes/users+/$username_+/tech": typeof techLoader }
+> = ({ data, params, matches }) => {
+  const techMatch = matches.find(
+    (m) => m.id === "routes/users+/$username_+/tech",
+  );
+  const displayName = techMatch?.data?.owner.name ?? params.username;
+  const techTitle = data?.tech.title ?? "Tech";
+  const techContentsSummary =
+    data && data.tech.content.length > 100
+      ? data?.tech.content.slice(0, 97) + "..."
+      : "No content";
+  return [
+    { title: `${techTitle} | ${displayName}'s Technology | Epic Tech!` },
+    {
+      name: "description",
+      content: techContentsSummary,
+    },
+  ];
+};
