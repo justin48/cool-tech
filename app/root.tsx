@@ -30,6 +30,13 @@ export default function App() {
   return (
     <html lang="en" className="h-full overflow-x-hidden">
       <head>
+        <title>Epic Tech</title>
+        <meta
+          name="Cool Tech!"
+          content="An application to communicate cool tech ideas"
+        />
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
         <Links />
       </head>
       <body className="flex h-full flex-col justify-between bg-background text-foreground">
