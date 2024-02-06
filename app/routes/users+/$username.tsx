@@ -1,4 +1,9 @@
-import { Link, MetaFunction, useLoaderData, useParams } from "@remix-run/react";
+import {
+  Link,
+  MetaFunction,
+  useLoaderData,
+  useRouteError,
+} from "@remix-run/react";
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { db } from "#app/utils/db.server.ts";
 import { invariantResponse } from "#app/utils/misc.tsx";
@@ -37,3 +42,14 @@ export const meta: MetaFunction<typeof loader> = ({ data, params }) => {
     { content: `Check out ${displayName}'s Epic Profile!!` },
   ];
 };
+
+export function ErrorBoundary() {
+  const error = useRouteError();
+  console.log(error);
+
+  return (
+    <div className="container mx-auto flex h-full w-full items-center justify-center bg-destructive p-20 text-h2 text-destructive-foreground">
+      <p>Oh no, something went wrong. Sorry about that.</p>
+    </div>
+  );
+}
