@@ -14,6 +14,7 @@ import { Input } from "#app/components/ui/input.tsx";
 import { Label } from "#app/components/ui/label.tsx";
 import { Textarea } from "#app/components/ui/textarea.tsx";
 import { StatusButton } from "#app/components/ui/status-button.tsx";
+import { GeneralErrorBoundary } from "#app/components/error-boundary.tsx";
 
 export async function loader({ params }: LoaderFunctionArgs) {
   const tech = db.tech.findFirst({
@@ -83,5 +84,17 @@ export default function TechEdit() {
         </StatusButton>
       </div>
     </Form>
+  );
+}
+
+export function ErrorBoundary() {
+  return (
+    <GeneralErrorBoundary
+      statusHandlers={{
+        404: ({ params }) => (
+          <p>No technology with the identifier "{params.techId}" exists</p>
+        ),
+      }}
+    />
   );
 }

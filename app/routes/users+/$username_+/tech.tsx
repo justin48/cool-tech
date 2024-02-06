@@ -8,6 +8,8 @@ import {
 import { cn, invariantResponse } from "#app/utils/misc.tsx";
 import { json, LoaderFunctionArgs } from "@remix-run/node";
 import { db } from "#app/utils/db.server.ts";
+import { GeneralErrorBoundary } from "#app/components/error-boundary.tsx";
+import React from "react";
 
 export async function loader({ params }: LoaderFunctionArgs) {
   const owner = db.user.findFirst({
@@ -72,5 +74,19 @@ export default function TechRoute() {
         </div>
       </div>
     </main>
+  );
+}
+
+export function ErrorBoundary() {
+  return (
+    <GeneralErrorBoundary
+      statusHandlers={{
+        404: ({ params }) => (
+          <p>
+            No technology owner with the identifier "{params.techId}" exists
+          </p>
+        ),
+      }}
+    />
   );
 }

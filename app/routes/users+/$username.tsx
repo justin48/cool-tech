@@ -1,12 +1,16 @@
 import {
+  isRouteErrorResponse,
   Link,
   MetaFunction,
   useLoaderData,
+  useParams,
   useRouteError,
 } from "@remix-run/react";
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { db } from "#app/utils/db.server.ts";
+import { GeneralErrorBoundary } from "#app/components/error-boundary.tsx";
 import { invariantResponse } from "#app/utils/misc.tsx";
+import React from "react";
 
 export async function loader({ params }: LoaderFunctionArgs) {
   const user = db.user.findFirst({
@@ -44,12 +48,13 @@ export const meta: MetaFunction<typeof loader> = ({ data, params }) => {
 };
 
 export function ErrorBoundary() {
-  const error = useRouteError();
-  console.log(error);
-
   return (
-    <div className="container mx-auto flex h-full w-full items-center justify-center bg-destructive p-20 text-h2 text-destructive-foreground">
-      <p>Oh no, something went wrong. Sorry about that.</p>
-    </div>
+    <GeneralErrorBoundary
+      statusHandlers={{
+        404: ({ params }) => (
+          <p>No user with the username "{params.username}" exists</p>
+        ),
+      }}
+    />
   );
 }

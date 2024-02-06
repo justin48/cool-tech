@@ -12,6 +12,7 @@ import { Button } from "#app/components/ui/button.tsx";
 import { invariantResponse } from "#app/utils/misc.tsx";
 import React from "react";
 import { type loader as techLoader } from "./tech.tsx";
+import { GeneralErrorBoundary } from "#app/components/error-boundary.tsx";
 
 export async function loader({ params }: LoaderFunctionArgs) {
   const tech = db.tech.findFirst({
@@ -91,3 +92,15 @@ export const meta: MetaFunction<
     },
   ];
 };
+
+export function ErrorBoundary() {
+  return (
+    <GeneralErrorBoundary
+      statusHandlers={{
+        404: ({ params }) => (
+          <p>No technology with the identifier "{params.techId}" exists</p>
+        ),
+      }}
+    />
+  );
+}
