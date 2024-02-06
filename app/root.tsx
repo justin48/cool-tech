@@ -8,6 +8,7 @@ import {
   Scripts,
   ScrollRestoration,
   useLoaderData,
+  MetaFunction,
 } from "@remix-run/react";
 import { json, type LinksFunction } from "@remix-run/node";
 import faviconAssetUrl from "./assets/favicon.svg";
@@ -30,11 +31,7 @@ export default function App() {
   return (
     <html lang="en" className="h-full overflow-x-hidden">
       <head>
-        <title>Epic Tech</title>
-        <meta
-          name="Cool Tech!"
-          content="An application to communicate cool tech ideas"
-        />
+        <Meta />
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
         <Links />
@@ -72,3 +69,13 @@ export default function App() {
     </html>
   );
 }
+
+export const meta: MetaFunction = () => {
+  return [
+    { title: "Epic Tech" },
+    {
+      name: "Cool Tech Website!",
+      content: "An application where cool tech lives",
+    },
+  ];
+};

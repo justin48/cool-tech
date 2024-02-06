@@ -1,4 +1,4 @@
-import { Link, useLoaderData, useParams } from "@remix-run/react";
+import { Link, MetaFunction, useLoaderData, useParams } from "@remix-run/react";
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { db } from "#app/utils/db.server.ts";
 import { invariantResponse } from "#app/utils/misc.tsx";
@@ -29,3 +29,10 @@ export default function ProfileRoute() {
     </div>
   );
 }
+
+export const meta: MetaFunction = () => {
+  return [
+    { title: "Profile | Epic Tech" },
+    { content: "Checkout this cool epic Tech profile!" },
+  ];
+};
