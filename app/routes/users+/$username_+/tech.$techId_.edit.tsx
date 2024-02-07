@@ -89,9 +89,15 @@ export async function action({ request, params }: LoaderFunctionArgs) {
   return redirect(`/users/${params.username}/tech/${params.techId}`);
 }
 
-function ErrorList({ errors }: { errors?: Array<string> | null }) {
+function ErrorList({
+  id,
+  errors,
+}: {
+  id?: string;
+  errors?: Array<string> | null;
+}) {
   return errors?.length ? (
-    <ul className="flex flex-col gap-1">
+    <ul id={id} className="flex flex-col gap-1">
       {errors.map((error, i) => (
         <li key={i} className="text-[10px] text-foreground-destructive">
           {error}
@@ -121,12 +127,21 @@ export default function TechEdit() {
     actionData?.status === "error" ? actionData.errors.formErrors : null;
   const isHydrated = useHydrated();
 
+  const formHasErrors = Boolean(formErrors?.length);
+  const formErrorId = formHasErrors ? "form-error" : undefined;
+  const titleHasErrors = Boolean(fieldErrors?.title.length);
+  const titleErrorId = titleHasErrors ? "title-error" : undefined;
+  const contentHasErrors = Boolean(fieldErrors?.content.length);
+  const contentErrorId = contentHasErrors ? "content-error" : undefined;
+
   return (
     <Form
       id={formId}
       method="POST"
       noValidate={isHydrated}
       className="flex h-full flex-col gap-y-4 overflow-x-hidden px-10 pb-28 pt-12"
+      aria-invalid={formHasErrors || undefined}
+      aria-describedby={formErrorId}
     >
       <div className="flex flex-col gap-1">
         <div>
@@ -137,9 +152,12 @@ export default function TechEdit() {
             defaultValue={data.tech.title}
             required
             maxLength={titleMaxLength}
+            aria-invalid={titleHasErrors || undefined}
+            aria-describedby={titleErrorId}
+            autoFocus
           />
           <div className="min-h-[32px] px-4 pb-3 pt-1">
-            <ErrorList errors={fieldErrors?.title} />
+            <ErrorList id={titleErrorId} errors={fieldErrors?.title} />
           </div>
         </div>
         <div>
@@ -150,9 +168,11 @@ export default function TechEdit() {
             defaultValue={data.tech.content}
             required
             maxLength={contentMaxLength}
+            aria-invalid={contentHasErrors || undefined}
+            aria-describedby={contentErrorId}
           />
           <div className="min-h-[32px] px-4 pb-3 pt-1">
-            <ErrorList errors={fieldErrors?.content} />
+            <ErrorList id={contentErrorId} errors={fieldErrors?.content} />
           </div>
         </div>
       </div>
@@ -169,7 +189,7 @@ export default function TechEdit() {
           Submit
         </StatusButton>
       </div>
-      <ErrorList errors={formErrors} />
+      <ErrorList id={formErrorId} errors={formErrors} />
     </Form>
   );
 }
