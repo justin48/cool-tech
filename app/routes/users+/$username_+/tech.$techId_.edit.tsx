@@ -8,7 +8,7 @@ import {
 import { json, LoaderFunctionArgs, redirect } from "@remix-run/node";
 import { db, updateTech } from "#app/utils/db.server.ts";
 import { invariantResponse, useIsSubmitting } from "#app/utils/misc.tsx";
-import React, { useEffect, useId, useState } from "react";
+import React, { useEffect, useId, useRef, useState } from "react";
 import { floatingToolbarClassName } from "#app/components/floating-toolbar.tsx";
 import { Button } from "#app/components/ui/button.tsx";
 import { Input } from "#app/components/ui/input.tsx";
@@ -117,6 +117,7 @@ export default function TechEdit() {
   const data = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const isSubmitting = useIsSubmitting();
+  const formRef = useRef<HTMLFormElement>(null);
   const formId = "tech-editor";
   const titleId = useId();
   const contentId = useId();
@@ -134,6 +135,21 @@ export default function TechEdit() {
   const contentHasErrors = Boolean(fieldErrors?.content.length);
   const contentErrorId = contentHasErrors ? "content-error" : undefined;
 
+  useEffect(() => {
+    const formEl = formRef.current;
+    if (!formEl) return;
+    if (actionData?.status !== "error") return;
+
+    if (formEl.matches('[aria-invalid="true"]')) {
+      formEl.focus();
+    } else {
+      const firstInvalid = formEl.querySelector('[aria-invalid="true"]');
+      if (firstInvalid instanceof HTMLElement) {
+        firstInvalid.focus();
+      }
+    }
+  }, [actionData]);
+
   return (
     <Form
       id={formId}
@@ -142,6 +158,8 @@ export default function TechEdit() {
       className="flex h-full flex-col gap-y-4 overflow-x-hidden px-10 pb-28 pt-12"
       aria-invalid={formHasErrors || undefined}
       aria-describedby={formErrorId}
+      ref={formRef}
+      tabIndex={-1}
     >
       <div className="flex flex-col gap-1">
         <div>
