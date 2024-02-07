@@ -8,7 +8,7 @@ import {
 import { json, LoaderFunctionArgs, redirect } from "@remix-run/node";
 import { db, updateTech } from "#app/utils/db.server.ts";
 import { invariantResponse, useIsSubmitting } from "#app/utils/misc.tsx";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useId, useState } from "react";
 import { floatingToolbarClassName } from "#app/components/floating-toolbar.tsx";
 import { Button } from "#app/components/ui/button.tsx";
 import { Input } from "#app/components/ui/input.tsx";
@@ -111,7 +111,9 @@ export default function TechEdit() {
   const data = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const isSubmitting = useIsSubmitting();
-  const formId = "note-editor";
+  const formId = "tech-editor";
+  const titleId = useId();
+  const contentId = useId();
 
   const fieldErrors =
     actionData?.status === "error" ? actionData.errors.fieldErrors : null;
@@ -128,8 +130,9 @@ export default function TechEdit() {
     >
       <div className="flex flex-col gap-1">
         <div>
-          <Label>Title</Label>
+          <Label htmlFor={titleId}>Title</Label>
           <Input
+            id={titleId}
             name="title"
             defaultValue={data.tech.title}
             required
@@ -140,8 +143,9 @@ export default function TechEdit() {
           </div>
         </div>
         <div>
-          <Label>Content</Label>
+          <Label htmlFor={contentId}>Content</Label>
           <Textarea
+            id={contentId}
             name="content"
             defaultValue={data.tech.content}
             required
@@ -153,7 +157,7 @@ export default function TechEdit() {
         </div>
       </div>
       <div className={floatingToolbarClassName}>
-        <Button variant="destructive" type="reset">
+        <Button form={formId} variant="destructive" type="reset">
           Reset
         </Button>
         <StatusButton
