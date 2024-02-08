@@ -7,7 +7,7 @@ import {
 } from "@remix-run/node";
 import { db, updateTech } from "#app/utils/db.server.ts";
 import { cn, invariantResponse, useIsSubmitting } from "#app/utils/misc.tsx";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { floatingToolbarClassName } from "#app/components/floating-toolbar.tsx";
 import { Button } from "#app/components/ui/button.tsx";
 import { Input } from "#app/components/ui/input.tsx";
@@ -16,7 +16,14 @@ import { Textarea } from "#app/components/ui/textarea.tsx";
 import { StatusButton } from "#app/components/ui/status-button.tsx";
 import { GeneralErrorBoundary } from "#app/components/error-boundary.tsx";
 import { optional, z } from "zod";
-import { conform, useForm } from "@conform-to/react";
+import {
+  conform,
+  FieldConfig,
+  list,
+  useFieldList,
+  useFieldset,
+  useForm,
+} from "@conform-to/react";
 import { getFieldsetConstraint, parse } from "@conform-to/zod";
 import { createMemoryUploadHandler } from "#node_modules/@remix-run/server-runtime/dist/upload/memoryUploadHandler.js";
 
@@ -45,23 +52,21 @@ const contentMaxLength = 10000;
 
 const MAX_UPLOAD_SIZE = 1024 * 1024 * 3;
 
-const TechEditorSchema = z.object({
-  title: z
-    .string()
-    .min(1, { message: "Title is required" })
-    .max(titleMaxLength),
-  content: z
-    .string()
-    .min(1, { message: "Content is required" })
-    .max(contentMaxLength),
-  imageId: z.string().optional(),
+const ImageFieldsetSchema = z.object({
+  id: z.string().optional(),
   file: z
     .instanceof(File)
     .refine((file) => {
       return file.size <= MAX_UPLOAD_SIZE;
-    }, "File size must be less than 3MB")
+    }, `File size must be less than ${MAX_UPLOAD_SIZE}`)
     .optional(),
   altText: z.string().optional(),
+});
+
+const TechEditorSchema = z.object({
+  title: z.string().max(titleMaxLength),
+  content: z.string().max(contentMaxLength),
+  images: z.array(ImageFieldsetSchema),
 });
 
 export async function action({ request, params }: LoaderFunctionArgs) {
@@ -76,23 +81,21 @@ export async function action({ request, params }: LoaderFunctionArgs) {
     schema: TechEditorSchema,
   });
 
+  if (submission.intent !== "submit") {
+    return json({ status: "idle", submission } as const);
+  }
+
   if (!submission.value) {
     return json({ status: "error", submission } as const, { status: 400 });
   }
 
-  const { title, content, file, imageId, altText } = submission.value;
+  const { title, content, images } = submission.value;
 
   await updateTech({
     id: params.techId,
     title,
     content,
-    images: [
-      {
-        id: imageId,
-        file,
-        altText,
-      },
-    ],
+    images,
   });
 
   return redirect(`/users/${params.username}/tech/${params.techId}`);
@@ -131,39 +134,73 @@ export default function TechEdit() {
     defaultValue: {
       title: data.tech.title,
       content: data.tech.content,
+      images: data.tech.images.length ? data.tech.images : [{}],
     },
   });
 
+  const imageList = useFieldList(form.ref, fields.images);
+
   return (
-    <Form
-      method="POST"
-      className="flex h-full flex-col gap-y-4 overflow-x-hidden px-10 pb-28 pt-12"
-      {...form.props}
-      encType="multipart/form-data"
-    >
-      <div className="flex flex-col gap-1">
-        <div>
-          <Label htmlFor={fields.title.id}>Title</Label>
-          <Input autoFocus {...conform.input(fields.title)} />
-          <div className="min-h-[32px] px-4 pb-3 pt-1">
-            <ErrorList id={fields.title.errorId} errors={fields.title.errors} />
+    <div className="absolute inset-0">
+      <Form
+        method="POST"
+        className="flex h-full flex-col gap-y-4 overflow-x-hidden px-10 pb-28 pt-12"
+        {...form.props}
+        encType="multipart/form-data"
+      >
+        <button type="submit" className="hidden" />
+        <div className="flex flex-col gap-1">
+          <div>
+            <Label htmlFor={fields.title.id}>Title</Label>
+            <Input autoFocus {...conform.input(fields.title)} />
+            <div className="min-h-[32px] px-4 pb-3 pt-1">
+              <ErrorList
+                id={fields.title.errorId}
+                errors={fields.title.errors}
+              />
+            </div>
           </div>
-        </div>
-        <div>
-          <Label htmlFor={fields.content.id}>Content</Label>
-          <Textarea {...conform.textarea(fields.content)} />
-          <div className="min-h-[32px] px-4 pb-3 pt-1">
-            <ErrorList
-              id={fields.content.errorId}
-              errors={fields.content.errors}
-            />
+          <div>
+            <Label htmlFor={fields.content.id}>Content</Label>
+            <Textarea {...conform.textarea(fields.content)} />
+            <div className="min-h-[32px] px-4 pb-3 pt-1">
+              <ErrorList
+                id={fields.content.errorId}
+                errors={fields.content.errors}
+              />
+            </div>
           </div>
+          <div>
+            <Label>Images</Label>
+            <ul className="flex flex-col gap-4">
+              {imageList.map((image, index) => (
+                <li
+                  key={image.key}
+                  className="relative border-b-2 border-muted-foreground"
+                >
+                  <button
+                    className="text-foreground-destructive absolute right-0 top-0"
+                    {...list.remove(fields.images.name, { index })}
+                  >
+                    <span aria-hidden>❌</span>{" "}
+                    <span className="sr-only">Delete image {index + 1}</span>
+                  </button>
+                  <ImageChooser config={image} />
+                </li>
+              ))}
+            </ul>
+          </div>
+          <Button
+            className="mt-3"
+            {...list.insert(fields.images.name, { defaultValue: {} })}
+          >
+            <span aria-hidden>➕ Image</span>{" "}
+            <span className="sr-only">Add image</span>
+          </Button>
         </div>
-        <div>
-          <Label>Image</Label>
-          <ImageChooser image={data.tech.images[0]} />
-        </div>
-      </div>
+
+        <ErrorList id={form.id} errors={form.errors} />
+      </Form>
       <div className={floatingToolbarClassName}>
         <Button form={form.id} variant="destructive" type="reset">
           Reset
@@ -177,29 +214,30 @@ export default function TechEdit() {
           Submit
         </StatusButton>
       </div>
-      <ErrorList id={form.id} errors={form.errors} />
-    </Form>
+    </div>
   );
 }
 
 function ImageChooser({
-  image,
+  config,
 }: {
-  image?: { id: string; altText?: string | null };
+  config: FieldConfig<z.infer<typeof ImageFieldsetSchema>>;
 }) {
-  const existingImage = Boolean(image);
+  const ref = useRef<HTMLFieldSetElement>(null);
+  const fields = useFieldset(ref, config);
+  const existingImage = Boolean(fields.id.defaultValue);
   const [previewImage, setPreviewImage] = useState<string | null>(
-    existingImage ? `/resources/images/${image?.id}` : null,
+    existingImage ? `/resources/images/${fields.id.defaultValue}` : null,
   );
-  const [altText, setAltText] = useState(image?.altText ?? "");
+  const [altText, setAltText] = useState(fields.altText.defaultValue ?? "");
 
   return (
-    <fieldset>
+    <fieldset ref={ref} {...conform.fieldset(config)}>
       <div className="flex gap-3">
         <div className="w-32">
           <div className="relative h-32 w-32">
             <label
-              htmlFor="image-input"
+              htmlFor={fields.file.id}
               className={cn("group absolute h-32 w-32 rounded-lg", {
                 "bg-accent opacity-40 focus-within:opacity-100 hover:opacity-100":
                   !previewImage,
@@ -225,10 +263,13 @@ function ImageChooser({
                 </div>
               )}
               {existingImage ? (
-                <input name="imageId" type="hidden" value={image?.id} />
+                <input
+                  {...conform.input(fields.id, {
+                    type: "hidden",
+                  })}
+                />
               ) : null}
               <input
-                id="image-input"
                 aria-label="Image"
                 className="absolute left-0 top-0 z-0 h-32 w-32 cursor-pointer opacity-0"
                 onChange={(event) => {
@@ -244,20 +285,19 @@ function ImageChooser({
                     setPreviewImage(null);
                   }
                 }}
-                name="file"
-                type="file"
                 accept="image/*"
+                {...conform.input(fields.file, {
+                  type: "file",
+                })}
               />
             </label>
           </div>
         </div>
         <div className="flex-1">
-          <Label htmlFor="alt-text">Alt Text</Label>
+          <Label htmlFor={fields.altText.id}>Alt Text</Label>
           <Textarea
-            id="alt-text"
-            name="altText"
-            defaultValue={altText}
             onChange={(e) => setAltText(e.currentTarget.value)}
+            {...conform.textarea(fields.altText)}
           />
         </div>
       </div>
