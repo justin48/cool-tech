@@ -11,10 +11,13 @@ import {
   MetaFunction,
 } from "@remix-run/react";
 import { json, type LinksFunction } from "@remix-run/node";
+import { HoneypotProvider } from "remix-utils/honeypot/react";
 import faviconAssetUrl from "./assets/favicon.svg";
 import tailwindStyleSheetUrl from "./styles/tailwind.css";
 import { getEnv } from "#app/utils/env.server.ts";
 import { GeneralErrorBoundary } from "#app/components/error-boundary.tsx";
+import { honeypot } from "./utils/honeypot.server.ts";
+import React from "react";
 
 export const links: LinksFunction = () => {
   return [
@@ -24,10 +27,11 @@ export const links: LinksFunction = () => {
 };
 
 export async function loader() {
-  return json({ username: os.userInfo().username, ENV: getEnv() });
+  const honeyProps = honeypot.getInputProps();
+  return json({ username: os.userInfo().username, ENV: getEnv(), honeyProps });
 }
 
-export default function App() {
+export function App() {
   const data = useLoaderData<typeof loader>();
 
   return (
@@ -77,6 +81,16 @@ export function Document({ children }: { children: React.ReactNode }) {
         <Scripts />
       </body>
     </html>
+  );
+}
+
+export default function AppWithProviders() {
+  const data = useLoaderData<typeof loader>();
+
+  return (
+    <HoneypotProvider {...data.honeyProps}>
+      <App />
+    </HoneypotProvider>
   );
 }
 
