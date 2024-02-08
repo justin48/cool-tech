@@ -11,7 +11,7 @@ import { Input } from "#app/components/ui/input.tsx";
 import { Label } from "#app/components/ui/label.tsx";
 import { invariantResponse } from "#app/utils/misc.tsx";
 import React from "react";
-import { checkHoneypot, honeypot } from "#app/utils/honeypot.server.js";
+import { checkHoneypot, honeypot } from "#app/utils/honeypot.server.ts";
 
 export async function action({ request }: LoaderFunctionArgs) {
   const formData = await request.formData();
