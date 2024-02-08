@@ -17,6 +17,9 @@ import { Textarea } from "#app/components/ui/textarea.tsx";
 import { StatusButton } from "#app/components/ui/status-button.tsx";
 import { GeneralErrorBoundary } from "#app/components/error-boundary.tsx";
 import { err } from "#node_modules/@remix-run/dev/dist/result.js";
+import { z } from "zod";
+import { conform, useForm } from "@conform-to/react";
+import { getFieldsetConstraint, parse } from "@conform-to/zod";
 
 export async function loader({ params }: LoaderFunctionArgs) {
   const tech = db.tech.findFirst({
@@ -34,55 +37,34 @@ export async function loader({ params }: LoaderFunctionArgs) {
   });
 }
 
-type ActionErrors = {
-  formErrors: Array<string>;
-  fieldErrors: {
-    title: Array<string>;
-    content: Array<string>;
-  };
-};
-
 const titleMaxLength = 100;
 const contentMaxLength = 10000;
 
+const TechEditorSchema = z.object({
+  title: z
+    .string()
+    .min(1, { message: "Title is required" })
+    .max(titleMaxLength),
+  content: z
+    .string()
+    .min(1, { message: "Content is required" })
+    .max(contentMaxLength),
+});
+
 export async function action({ request, params }: LoaderFunctionArgs) {
+  invariantResponse(params.techId, "techId param is required");
+
   const formData = await request.formData();
-  const title = formData.get("title");
-  const content = formData.get("content");
-  invariantResponse(typeof title === "string", "Title must be a string");
-  invariantResponse(typeof content === "string", "Content must be a string");
 
-  const errors: ActionErrors = {
-    formErrors: [],
-    fieldErrors: {
-      title: [],
-      content: [],
-    },
-  };
+  const submission = parse(formData, {
+    schema: TechEditorSchema,
+  });
 
-  if (title === "") {
-    errors.fieldErrors.title.push("Title is required");
-  }
-  if (title.length > titleMaxLength) {
-    errors.fieldErrors.title.push(
-      `Title is too large. Must be ${titleMaxLength} characters or less`,
-    );
-  }
-  if (content === "") {
-    errors.fieldErrors.content.push("Content is required");
-  }
-  if (content.length > contentMaxLength) {
-    errors.fieldErrors.content.push(
-      `Content is too large. Must be ${contentMaxLength} characters or less`,
-    );
+  if (!submission.value) {
+    return json({ status: "error", submission } as const, { status: 400 });
   }
 
-  const hasErrors =
-    errors.formErrors.length ||
-    Object.values(errors.fieldErrors).some((fieldErrors) => fieldErrors.length);
-  if (hasErrors) {
-    return json({ status: "error", errors } as const, { status: 400 });
-  }
+  const { title, content } = submission.value;
 
   await updateTech({ id: params.techId, title, content });
 
@@ -107,99 +89,63 @@ function ErrorList({
   ) : null;
 }
 
-function useHydrated() {
-  const [hydrated, setHydrated] = useState(false);
-  useEffect(() => setHydrated(true), []);
-  return hydrated;
-}
-
 export default function TechEdit() {
   const data = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const isSubmitting = useIsSubmitting();
-  const formRef = useRef<HTMLFormElement>(null);
-  const formId = "tech-editor";
+
   const titleId = useId();
   const contentId = useId();
 
   const fieldErrors =
-    actionData?.status === "error" ? actionData.errors.fieldErrors : null;
+    actionData?.status === "error" ? actionData.submission.error : null;
   const formErrors =
-    actionData?.status === "error" ? actionData.errors.formErrors : null;
-  const isHydrated = useHydrated();
+    actionData?.status === "error" ? actionData.submission.error[""] : null;
 
-  const formHasErrors = Boolean(formErrors?.length);
-  const formErrorId = formHasErrors ? "form-error" : undefined;
-  const titleHasErrors = Boolean(fieldErrors?.title.length);
-  const titleErrorId = titleHasErrors ? "title-error" : undefined;
-  const contentHasErrors = Boolean(fieldErrors?.content.length);
-  const contentErrorId = contentHasErrors ? "content-error" : undefined;
-
-  useEffect(() => {
-    const formEl = formRef.current;
-    if (!formEl) return;
-    if (actionData?.status !== "error") return;
-
-    if (formEl.matches('[aria-invalid="true"]')) {
-      formEl.focus();
-    } else {
-      const firstInvalid = formEl.querySelector('[aria-invalid="true"]');
-      if (firstInvalid instanceof HTMLElement) {
-        firstInvalid.focus();
-      }
-    }
-  }, [actionData]);
+  const [form, fields] = useForm({
+    id: "tech-editor",
+    constraint: getFieldsetConstraint(TechEditorSchema),
+    lastSubmission: actionData?.submission,
+    onValidate({ formData }) {
+      return parse(formData, { schema: TechEditorSchema });
+    },
+    defaultValue: {
+      title: data.tech.title,
+      content: data.tech.content,
+    },
+  });
 
   return (
     <Form
-      id={formId}
       method="POST"
-      noValidate={isHydrated}
       className="flex h-full flex-col gap-y-4 overflow-x-hidden px-10 pb-28 pt-12"
-      aria-invalid={formHasErrors || undefined}
-      aria-describedby={formErrorId}
-      ref={formRef}
-      tabIndex={-1}
+      {...form.props}
     >
       <div className="flex flex-col gap-1">
         <div>
-          <Label htmlFor={titleId}>Title</Label>
-          <Input
-            id={titleId}
-            name="title"
-            defaultValue={data.tech.title}
-            required
-            maxLength={titleMaxLength}
-            aria-invalid={titleHasErrors || undefined}
-            aria-describedby={titleErrorId}
-            autoFocus
-          />
+          <Label htmlFor={fields.title.id}>Title</Label>
+          <Input autoFocus {...conform.input(fields.title)} />
           <div className="min-h-[32px] px-4 pb-3 pt-1">
-            <ErrorList id={titleErrorId} errors={fieldErrors?.title} />
+            <ErrorList id={fields.title.errorId} errors={fields.title.errors} />
           </div>
         </div>
         <div>
-          <Label htmlFor={contentId}>Content</Label>
-          <Textarea
-            id={contentId}
-            name="content"
-            defaultValue={data.tech.content}
-            required
-            maxLength={contentMaxLength}
-            aria-invalid={contentHasErrors || undefined}
-            aria-describedby={contentErrorId}
-          />
+          <Label htmlFor={fields.content.id}>Content</Label>
+          <Textarea {...conform.textarea(fields.content)} />
           <div className="min-h-[32px] px-4 pb-3 pt-1">
-            <ErrorList id={contentErrorId} errors={fieldErrors?.content} />
+            <ErrorList
+              id={fields.content.errorId}
+              errors={fields.content.errors}
+            />
           </div>
         </div>
       </div>
       <div className={floatingToolbarClassName}>
-        <Button form={formId} variant="destructive" type="reset">
+        <Button form={form.id} variant="destructive" type="reset">
           Reset
         </Button>
         <StatusButton
-          form={formId}
+          form={form.id}
           type="submit"
           disabled={isSubmitting}
           status={isSubmitting ? "pending" : "idle"}
@@ -207,7 +153,7 @@ export default function TechEdit() {
           Submit
         </StatusButton>
       </div>
-      <ErrorList id={formErrorId} errors={formErrors} />
+      <ErrorList id={form.id} errors={form.errors} />
     </Form>
   );
 }
