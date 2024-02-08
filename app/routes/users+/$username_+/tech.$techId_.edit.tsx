@@ -88,8 +88,8 @@ export async function action({ request, params }: LoaderFunctionArgs) {
     content,
     images: [
       {
-        file,
         id: imageId,
+        file,
         altText,
       },
     ],
