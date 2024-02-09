@@ -54,6 +54,9 @@ export function App() {
             <div className="font-light">Epic</div>
             <div className="font-bold">Technologies!!</div>
           </Link>
+          <Link className="underline" to="/signup">
+            Sign Up
+          </Link>
         </nav>
       </header>
       <div className="flex-1">
