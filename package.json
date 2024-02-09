@@ -2,8 +2,9 @@
   "name": "cool-tech",
   "version": "1.0.0",
   "description": "This repo is used to display cool tech",
+  "private": true,
+  "sideEffects": false,
   "type": "module",
-  "main": "index.js",
   "imports": {
     "#*": "./*"
   },
