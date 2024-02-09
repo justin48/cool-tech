@@ -14,7 +14,7 @@
     "build:server": "tsx ./other/build-server.ts",
     "dev": "remix dev -c \"node ./server/dev-server.js\" --manual",
     "test": "playwright test",
-    "start": "cross-env NODE_ENV=production node .",
+    "start": "remix-serve ./build/index.js",
     "lint": "eslint .",
     "typecheck": "tsc"
   },
@@ -40,6 +40,7 @@
     "clsx": "^2.0.0",
     "compression": "^1.7.4",
     "crypto-js": "^4.1.1",
+    "execa": "^8.0.1",
     "express": "^4.18.2",
     "express-rate-limit": "^7.1.1",
     "get-port": "^7.0.0",

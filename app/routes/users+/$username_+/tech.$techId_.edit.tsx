@@ -292,6 +292,9 @@ function ImageChooser({
               />
             </label>
           </div>
+          <div className="min-h-[32px] px-4 pb-3 pt-1">
+            <ErrorList id={fields.file.errorId} errors={fields.file.errors} />
+          </div>
         </div>
         <div className="flex-1">
           <Label htmlFor={fields.altText.id}>Alt Text</Label>
