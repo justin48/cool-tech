@@ -8,7 +8,10 @@ import {
 import { json, LoaderFunctionArgs, redirect } from "@remix-run/node";
 import { db } from "#app/utils/db.server.ts";
 import { floatingToolbarClassName } from "#app/components/floating-toolbar.tsx";
+import { AuthenticityTokenInput } from "remix-utils/csrf/react";
+import { CSRFError } from "remix-utils/csrf/server";
 import { Button } from "#app/components/ui/button.tsx";
+import { csrf } from "#app/utils/csrf.server.ts";
 import { invariantResponse } from "#app/utils/misc.tsx";
 import React from "react";
 import { type loader as techLoader } from "./tech.tsx";
@@ -35,17 +38,26 @@ export async function loader({ params }: LoaderFunctionArgs) {
 }
 
 export async function action({ request, params }: LoaderFunctionArgs) {
+  invariantResponse(params.techId, "TechId param is required");
   const formData = await request.formData();
+
+  try {
+    await csrf.validate(formData, request.headers);
+  } catch (error) {
+    if (error instanceof CSRFError) {
+      throw new Response("Invalid CSRF token", { status: 403 });
+    }
+    throw error;
+  }
+
   const intent = formData.get("intent");
-
-  invariantResponse(intent === "delete", "Invalid Intend");
-
+  invariantResponse(intent === "delete", "Invalid intent");
   db.tech.delete({ where: { id: { equals: params.techId } } });
 
   return redirect(`/users/${params.username}/tech`);
 }
 
-export default function SomeTechId() {
+export default function TechRoute() {
   const data = useLoaderData<typeof loader>();
   return (
     <div className="absolute inset-0 flex flex-col px-10">
@@ -70,6 +82,7 @@ export default function SomeTechId() {
       </div>
       <div className={floatingToolbarClassName}>
         <Form method="POST">
+          <AuthenticityTokenInput />
           <Button
             type="submit"
             variant="destructive"

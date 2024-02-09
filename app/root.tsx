@@ -10,7 +10,8 @@ import {
   useLoaderData,
   MetaFunction,
 } from "@remix-run/react";
-import { json, type LinksFunction } from "@remix-run/node";
+import { json, type LinksFunction, LoaderFunctionArgs } from "@remix-run/node";
+import { AuthenticityTokenProvider } from "remix-utils/csrf/react";
 import { HoneypotProvider } from "remix-utils/honeypot/react";
 import faviconAssetUrl from "./assets/favicon.svg";
 import tailwindStyleSheetUrl from "./styles/tailwind.css";
@@ -18,6 +19,7 @@ import { getEnv } from "#app/utils/env.server.ts";
 import { GeneralErrorBoundary } from "#app/components/error-boundary.tsx";
 import { honeypot } from "./utils/honeypot.server.ts";
 import React from "react";
+import { csrf } from "./utils/csrf.server.ts";
 
 export const links: LinksFunction = () => {
   return [
@@ -26,9 +28,19 @@ export const links: LinksFunction = () => {
   ];
 };
 
-export async function loader() {
+export async function loader({ request }: LoaderFunctionArgs) {
   const honeyProps = honeypot.getInputProps();
-  return json({ username: os.userInfo().username, ENV: getEnv(), honeyProps });
+  const [csrfToken, csrfCookieHeader] = await csrf.commitToken(request);
+  return json(
+    { username: os.userInfo().username, ENV: getEnv(), honeyProps, csrfToken },
+    {
+      headers: csrfCookieHeader
+        ? {
+            "set-cookie": csrfCookieHeader,
+          }
+        : {},
+    },
+  );
 }
 
 export function App() {
@@ -88,9 +100,11 @@ export default function AppWithProviders() {
   const data = useLoaderData<typeof loader>();
 
   return (
-    <HoneypotProvider {...data.honeyProps}>
-      <App />
-    </HoneypotProvider>
+    <AuthenticityTokenProvider token={data.csrfToken}>
+      <HoneypotProvider {...data.honeyProps}>
+        <App />
+      </HoneypotProvider>
+    </AuthenticityTokenProvider>
   );
 }
 
