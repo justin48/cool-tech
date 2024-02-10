@@ -82,7 +82,7 @@ export default function TechRoute() {
       </div>
       <div className={floatingToolbarClassName}>
         <Form method="POST">
-          <AuthenticityTokenInput />
+          {/*<AuthenticityTokenInput />*/}
           <Button
             type="submit"
             variant="destructive"
