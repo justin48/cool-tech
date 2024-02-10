@@ -47,9 +47,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
   });
 }
 
-const titleMinLength = 1;
 const titleMaxLength = 100;
-const contentMinLength = 1;
 const contentMaxLength = 10000;
 
 const MAX_UPLOAD_SIZE = 1024 * 1024 * 3;
@@ -59,16 +57,16 @@ const ImageFieldsetSchema = z.object({
   file: z
     .instanceof(File)
     .refine((file) => {
-      return !file || file.size <= MAX_UPLOAD_SIZE;
-    }, "File size must be less than 3MB")
+      return file.size <= MAX_UPLOAD_SIZE;
+    }, `File size must be less than ${MAX_UPLOAD_SIZE}`)
     .optional(),
   altText: z.string().optional(),
 });
 
 const TechEditorSchema = z.object({
-  title: z.string().min(titleMinLength).max(titleMaxLength),
-  content: z.string().min(contentMinLength).max(contentMaxLength),
-  images: z.array(ImageFieldsetSchema).max(5).optional(),
+  title: z.string().max(titleMaxLength),
+  content: z.string().max(contentMaxLength),
+  images: z.array(ImageFieldsetSchema),
 });
 
 export async function action({ request, params }: LoaderFunctionArgs) {
@@ -78,16 +76,6 @@ export async function action({ request, params }: LoaderFunctionArgs) {
     request,
     createMemoryUploadHandler({ maxPartSize: MAX_UPLOAD_SIZE }),
   );
-
-  const files = formData.getAll("files");
-  files.forEach((file) => {
-    if (!(file instanceof File)) {
-      throw new Response("This is not a File");
-    }
-    if (file.size > MAX_UPLOAD_SIZE) {
-      throw new Response("File size is too large!");
-    }
-  });
 
   const submission = parse(formData, {
     schema: TechEditorSchema,
@@ -303,9 +291,6 @@ function ImageChooser({
                 })}
               />
             </label>
-          </div>
-          <div className="min-h-[32px] px-4 pb-3 pt-1">
-            <ErrorList id={fields.file.errorId} errors={fields.file.errors} />
           </div>
         </div>
         <div className="flex-1">

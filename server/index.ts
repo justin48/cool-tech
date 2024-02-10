@@ -89,7 +89,7 @@ const strongestRateLimit = rateLimit({
 
 const strongRateLimit = rateLimit({
   ...rateLimitDefault,
-  limit: 100 * limitMultiple,
+  limit: 2,
 });
 
 const generalRateLimit = rateLimit(rateLimitDefault);
