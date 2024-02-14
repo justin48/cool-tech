@@ -33,9 +33,9 @@ COPY --from=builder /app/public /app/public
 # Set the environment to production
 ENV NODE_ENV production
 # Set the dabase url to the production database
-ENV DATABASE_URL file:./data.db
+ENV DATABASE_URL file:./cool-tech.db
 
-RUN npx prisma init --url file:./data.db
+RUN npx prisma init --url file:./cool-tech.db
 COPY prisma/schema.prisma prisma/
 COPY prisma/seed.ts prisma/
 RUN npx prisma db push
