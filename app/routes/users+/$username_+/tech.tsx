@@ -7,33 +7,24 @@ import {
 } from "@remix-run/react";
 import { cn, invariantResponse } from "#app/utils/misc.tsx";
 import { json, LoaderFunctionArgs } from "@remix-run/node";
-import { db } from "#app/utils/db.server.ts";
+import { prisma } from "#app/utils/db.server.ts";
 import { GeneralErrorBoundary } from "#app/components/error-boundary.tsx";
 import React from "react";
 
 export async function loader({ params }: LoaderFunctionArgs) {
-  const owner = db.user.findFirst({
-    where: {
-      username: {
-        equals: params.username,
-      },
+  const owner = await prisma.user.findUnique({
+    select: {
+      name: true,
+      username: true,
+      image: { select: { id: true } },
+      tech: { select: { id: true, title: true } },
     },
+    where: { username: params.username },
   });
 
   invariantResponse(owner, "Owner not found", { status: 404 });
 
-  const tech = db.tech
-    .findMany({
-      where: {
-        owner: {
-          username: {
-            equals: params.username,
-          },
-        },
-      },
-    })
-    .map(({ id, title }) => ({ id, title }));
-  return json({ owner, tech });
+  return json({ owner });
 }
 
 export default function TechRoute() {
@@ -52,7 +43,7 @@ export default function TechRoute() {
               </h1>
             </Link>
             <ul className="overflow-y-auto overflow-x-hidden pb-12">
-              {data.tech.map((tech) => (
+              {data.owner.tech.map((tech) => (
                 <li key={tech.id} className="p-1 pr-0">
                   <NavLink
                     to={tech.id}

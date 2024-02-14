@@ -5,9 +5,10 @@ import {
   redirect,
   unstable_parseMultipartFormData as parseMultipartFormData,
 } from "@remix-run/node";
-import { db, updateTech } from "#app/utils/db.server.ts";
-import { cn, invariantResponse, useIsSubmitting } from "#app/utils/misc.tsx";
+import { prisma } from "#app/utils/db.server.ts";
+import { cn, invariantResponse, useIsPending } from "#app/utils/misc.tsx";
 import React, { useRef, useState } from "react";
+import { createId as cuid } from "@paralleldrive/cuid2";
 import { floatingToolbarClassName } from "#app/components/floating-toolbar.tsx";
 import { Button } from "#app/components/ui/button.tsx";
 import { Input } from "#app/components/ui/input.tsx";
@@ -15,7 +16,7 @@ import { Label } from "#app/components/ui/label.tsx";
 import { Textarea } from "#app/components/ui/textarea.tsx";
 import { StatusButton } from "#app/components/ui/status-button.tsx";
 import { GeneralErrorBoundary } from "#app/components/error-boundary.tsx";
-import { optional, z } from "zod";
+import { z } from "zod";
 import {
   conform,
   FieldConfig,
@@ -28,7 +29,14 @@ import { getFieldsetConstraint, parse } from "@conform-to/zod";
 import { createMemoryUploadHandler } from "#node_modules/@remix-run/server-runtime/dist/upload/memoryUploadHandler.js";
 
 export async function loader({ params }: LoaderFunctionArgs) {
-  const tech = db.tech.findFirst({
+  const tech = await prisma.tech.findFirst({
+    select: {
+      title: true,
+      content: true,
+      images: {
+        select: { id: true, altText: true },
+      },
+    },
     where: {
       id: {
         equals: params.techId,
@@ -38,16 +46,12 @@ export async function loader({ params }: LoaderFunctionArgs) {
 
   invariantResponse(tech, "Tech not found", { status: 404 });
 
-  return json({
-    tech: {
-      title: tech.title,
-      content: tech.content,
-      images: tech.images.map((i) => ({ id: i.id, altText: i.altText })),
-    },
-  });
+  return json({ tech });
 }
 
+const titleMinLength = 1;
 const titleMaxLength = 100;
+const contentMinLength = 1;
 const contentMaxLength = 10000;
 
 const MAX_UPLOAD_SIZE = 1024 * 1024 * 3;
@@ -63,9 +67,23 @@ const ImageFieldsetSchema = z.object({
   altText: z.string().optional(),
 });
 
+type ImageFieldset = z.infer<typeof ImageFieldsetSchema>;
+
+function imageHasFile(
+  image: ImageFieldset,
+): image is ImageFieldset & { file: NonNullable<ImageFieldset["file"]> } {
+  return Boolean(image.file?.size && image.file?.size > 0);
+}
+
+function imageHasId(
+  image: ImageFieldset,
+): image is ImageFieldset & { id: NonNullable<ImageFieldset["id"]> } {
+  return image.id != null;
+}
+
 const TechEditorSchema = z.object({
-  title: z.string().max(titleMaxLength),
-  content: z.string().max(contentMaxLength),
+  title: z.string().min(titleMinLength).max(titleMaxLength),
+  content: z.string().min(contentMinLength).max(contentMaxLength),
   images: z.array(ImageFieldsetSchema),
 });
 
@@ -77,8 +95,39 @@ export async function action({ request, params }: LoaderFunctionArgs) {
     createMemoryUploadHandler({ maxPartSize: MAX_UPLOAD_SIZE }),
   );
 
-  const submission = parse(formData, {
-    schema: TechEditorSchema,
+  const submission = await parse(formData, {
+    schema: TechEditorSchema.transform(async ({ images = [], ...data }) => {
+      return {
+        ...data,
+        imageUpdates: await Promise.all(
+          images.filter(imageHasId).map(async (i) => {
+            if (imageHasFile(i)) {
+              return {
+                id: i.id,
+                altText: i.altText,
+                contentType: i.file.type,
+                blob: Buffer.from(await i.file.arrayBuffer()),
+              };
+            } else {
+              return { id: i.id, altText: i.altText };
+            }
+          }),
+        ),
+        newImages: await Promise.all(
+          images
+            .filter(imageHasFile)
+            .filter((i) => !i.id)
+            .map(async (image) => {
+              return {
+                altText: image.altText,
+                contentType: image.file.type,
+                blob: Buffer.from(await image.file.arrayBuffer()),
+              };
+            }),
+        ),
+      };
+    }),
+    async: true,
   });
 
   if (submission.intent !== "submit") {
@@ -89,13 +138,28 @@ export async function action({ request, params }: LoaderFunctionArgs) {
     return json({ status: "error", submission } as const, { status: 400 });
   }
 
-  const { title, content, images } = submission.value;
-
-  await updateTech({
-    id: params.techId,
+  const {
     title,
     content,
-    images,
+    imageUpdates = [],
+    newImages = [],
+  } = submission.value;
+
+  await prisma.tech.update({
+    select: { id: true },
+    where: { id: params.techId },
+    data: {
+      title,
+      content,
+      images: {
+        deleteMany: { id: { notIn: imageUpdates.map((i) => i.id) } },
+        updateMany: imageUpdates.map((updates) => ({
+          where: { id: updates.id },
+          data: { ...updates, id: updates.blob ? cuid() : updates.id },
+        })),
+        create: newImages,
+      },
+    },
   });
 
   return redirect(`/users/${params.username}/tech/${params.techId}`);
@@ -122,7 +186,7 @@ function ErrorList({
 export default function TechEdit() {
   const data = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
-  const isSubmitting = useIsSubmitting();
+  const isPending = useIsPending();
 
   const [form, fields] = useForm({
     id: "tech-editor",
@@ -208,8 +272,8 @@ export default function TechEdit() {
         <StatusButton
           form={form.id}
           type="submit"
-          disabled={isSubmitting}
-          status={isSubmitting ? "pending" : "idle"}
+          disabled={isPending}
+          status={isPending ? "pending" : "idle"}
         >
           Submit
         </StatusButton>
@@ -227,7 +291,7 @@ function ImageChooser({
   const fields = useFieldset(ref, config);
   const existingImage = Boolean(fields.id.defaultValue);
   const [previewImage, setPreviewImage] = useState<string | null>(
-    existingImage ? `/resources/images/${fields.id.defaultValue}` : null,
+    existingImage ? `/resources/tech-images/${fields.id.defaultValue}` : null,
   );
   const [altText, setAltText] = useState(fields.altText.defaultValue ?? "");
 

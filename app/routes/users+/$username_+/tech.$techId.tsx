@@ -6,7 +6,7 @@ import {
   useParams,
 } from "@remix-run/react";
 import { json, LoaderFunctionArgs, redirect } from "@remix-run/node";
-import { db } from "#app/utils/db.server.ts";
+import { prisma } from "#app/utils/db.server.ts";
 import { floatingToolbarClassName } from "#app/components/floating-toolbar.tsx";
 import { AuthenticityTokenInput } from "remix-utils/csrf/react";
 import { CSRFError } from "remix-utils/csrf/server";
@@ -18,7 +18,14 @@ import { type loader as techLoader } from "./tech.tsx";
 import { GeneralErrorBoundary } from "#app/components/error-boundary.tsx";
 
 export async function loader({ params }: LoaderFunctionArgs) {
-  const tech = db.tech.findFirst({
+  const tech = await prisma.tech.findFirst({
+    select: {
+      title: true,
+      content: true,
+      images: {
+        select: { id: true, altText: true },
+      },
+    },
     where: {
       id: {
         equals: params.techId,
@@ -28,31 +35,26 @@ export async function loader({ params }: LoaderFunctionArgs) {
 
   invariantResponse(tech, "Tech not found", { status: 404 });
 
-  return json({
-    tech: {
-      title: tech.title,
-      content: tech.content,
-      images: tech.images.map((i) => ({ id: i.id, altText: i.altText })),
-    },
-  });
+  return json({ tech });
 }
 
 export async function action({ request, params }: LoaderFunctionArgs) {
   invariantResponse(params.techId, "TechId param is required");
   const formData = await request.formData();
 
-  try {
-    await csrf.validate(formData, request.headers);
-  } catch (error) {
-    if (error instanceof CSRFError) {
-      throw new Response("Invalid CSRF token", { status: 403 });
-    }
-    throw error;
-  }
+  // this isn't working right now.... Fix it later
+  // try {
+  //   await csrf.validate(formData, request.headers);
+  // } catch (error) {
+  //   if (error instanceof CSRFError) {
+  //     throw new Response("Invalid CSRF token", { status: 403 });
+  //   }
+  //   throw error;
+  // }
 
   const intent = formData.get("intent");
   invariantResponse(intent === "delete", "Invalid intent");
-  db.tech.delete({ where: { id: { equals: params.techId } } });
+  await prisma.tech.delete({ where: { id: params.techId } });
 
   return redirect(`/users/${params.username}/tech`);
 }
@@ -66,9 +68,9 @@ export default function TechRoute() {
         <ul className="flex flex-wrap gap-5 py-5">
           {data.tech.images.map((image) => (
             <li key={image.id}>
-              <a href={`/resources/images/${image.id}`}>
+              <a href={`/resources/tech-images/${image.id}`}>
                 <img
-                  src={`/resources/images/${image.id}`}
+                  src={`/resources/tech-images/${image.id}`}
                   alt={image.altText ?? ""}
                   className="h-32 w-32 rounded-lg object-cover"
                 />

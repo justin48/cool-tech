@@ -17,7 +17,7 @@ export const meta: MetaFunction<
     (m) => m.id === "routes/users+/$username_+/tech",
   );
   const displayName = techMatch?.data?.owner.name ?? params.username;
-  const techCount = techMatch?.data?.tech.length ?? 0;
+  const techCount = techMatch?.data?.owner.tech.length ?? 0;
   const techText = techCount === 1 ? "tech" : "technologies";
   return [
     { title: `${displayName}'s Technology | Epic Tech` },

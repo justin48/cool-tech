@@ -74,22 +74,24 @@ app.use(morgan("tiny"));
 // When running tests or running in development, we want to effectively disable
 // rate limiting because playwright tests are very fast and we don't want to
 // have to wait for the rate limit to reset between tests.
-const limitMultiple = process.env.TESTING ? 10_000 : 1;
+const maxMultiple = process.env.TESTING ? 10_000 : 1;
 const rateLimitDefault = {
   windowMs: 60 * 1000,
-  limit: 1000 * limitMultiple,
+  max: 1000 * maxMultiple,
   standardHeaders: true,
   legacyHeaders: false,
 };
 
 const strongestRateLimit = rateLimit({
   ...rateLimitDefault,
-  limit: 10 * limitMultiple,
+  windowMs: 60 * 1000,
+  max: 10 * maxMultiple,
 });
 
 const strongRateLimit = rateLimit({
   ...rateLimitDefault,
-  limit: 2,
+  windowMs: 60 * 1000,
+  max: 100 * maxMultiple,
 });
 
 const generalRateLimit = rateLimit(rateLimitDefault);
@@ -180,7 +182,22 @@ if (process.env.NODE_ENV === "development") {
     .on("add", reloadBuild)
     .on("change", reloadBuild);
 
+  // this ensures that when you click "Set to playground" prisma disconnects from
+  // the database if it gets deleted.
+  const dbWatcher = chokidar.watch(
+    path.join(dirname, "../prisma/data.db").replace(/\\/g, "/"),
+    { ignoreInitial: true },
+  );
+  let timeout: ReturnType<typeof setTimeout>;
+  dbWatcher.on("change", () => {
+    clearTimeout(timeout);
+    timeout = setTimeout(async () => {
+      const { prisma } = await import("#app/utils/db.server.ts");
+      prisma.$disconnect();
+    }, 300);
+  });
   closeWithGrace(async () => {
     await buildWatcher.close();
+    await dbWatcher.close();
   });
 }
