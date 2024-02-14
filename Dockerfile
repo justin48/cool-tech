@@ -35,6 +35,10 @@ ENV NODE_ENV production
 # Set the dabase url to the production database
 ENV DATABASE_URL file:./data.db
 
+RUN npx prisma init --url file:./data.db
+COPY prisma/schema.prisma prisma/
+RUN npx prisma db push --force-reset && npx prisma db seed
+
 # Expose the port the app runs on
 EXPOSE 3000
 
