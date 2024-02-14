@@ -27,7 +27,7 @@ pipeline {
                 //sh 'npx prisma init --url file:./data.db'
                // sh 'npx prisma db push --force-reset && npx prisma db seed'
                 //sh 'npx prisma generate'
-                //sh 'echo $DATABASE_URL'
+                sh 'echo $DATABASE_URL'
             }
         }
         stage('Build Docker Image') {
