@@ -32,6 +32,7 @@ COPY --from=builder /app/public /app/public
 
 # Set the environment to production
 ENV NODE_ENV production
+ENV DATABASE_RUL file:./data.db
 
 # Expose the port the app runs on
 EXPOSE 3000

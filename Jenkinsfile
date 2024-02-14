@@ -19,8 +19,12 @@ pipeline {
                 echo 'Building Binaries'
                 sh 'npm install'
                 sh 'npx remix build'
-                sh 'npx prisma generate'
             }
+        }
+        stage('Build Prisma Database') {
+            sh 'npx prisma init --url file:./data.db'
+            sh 'npx prisma db push'
+            sh 'npx prisma generate'
         }
         stage('Build Docker Image') {
             steps {
