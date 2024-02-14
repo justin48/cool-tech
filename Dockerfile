@@ -39,7 +39,7 @@ RUN npx prisma init --url file:./data.db
 COPY prisma/schema.prisma prisma/
 COPY prisma/seed.ts prisma/
 RUN npx prisma db push
-COPY tests/fixtures tests
+COPY tests/ tests
 RUN npx tsx ./prisma/seed.ts
 
 # Expose the port the app runs on
