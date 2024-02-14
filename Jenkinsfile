@@ -23,8 +23,8 @@ pipeline {
         }
         stage('Build Prisma Database') {
             steps {
-                sh 'rm -rf prisma/'
-                sh 'npx prisma init --url file:./data.db'
+                //sh 'rm -rf prisma/'
+                //sh 'npx prisma init --url file:./data.db'
                 sh 'npx prisma db push'
                 sh 'npx prisma generate'
             }
