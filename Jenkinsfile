@@ -27,7 +27,6 @@ pipeline {
                 //sh 'npx prisma init --url file:./data.db'
                 sh 'npx prisma db push --force-reset && npx prisma db seed'
                 sh 'npx prisma generate'
-                sh 'rm -rf prisma/migrations'
                 sh 'npx prisma migrate deploy'
             }
         }
