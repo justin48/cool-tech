@@ -19,6 +19,7 @@ pipeline {
                 echo 'Building Binaries'
                 sh 'npm install'
                 sh 'npx remix build'
+                sh 'npx prisma generate'
             }
         }
         stage('Build Docker Image') {
