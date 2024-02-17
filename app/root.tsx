@@ -11,6 +11,7 @@ import {
     MetaFunction,
     useMatches,
     useFetcher,
+    useFetchers,
 } from "@remix-run/react";
 import {
     json,
@@ -126,7 +127,7 @@ export function Document({
 
 export function App() {
     const data = useLoaderData<typeof loader>()
-	const theme = data.theme
+	const theme = useTheme()
     const matches = useMatches();
     const isOnSearchPage = matches.find((m) => m.id === "routes/users+/index");
 
@@ -179,6 +180,19 @@ export default function AppWithProviders() {
             </AuthenticityTokenProvider>
         </HoneypotProvider>
     );
+}
+
+function useTheme() {
+	const data = useLoaderData<typeof loader>()
+	const fetchers = useFetchers()
+	const themeFetcher = fetchers.find(
+		fetcher => fetcher.formData?.get('intent') === 'update-theme'
+	)
+	const optimisticTheme = themeFetcher?.formData?.get('theme')
+	if (optimisticTheme === 'light' || optimisticTheme === 'dark') {
+		return optimisticTheme
+	}
+	return data.theme
 }
 
 function ThemeSwitch({userPreference}: { userPreference?: Theme }) {
