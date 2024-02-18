@@ -17,7 +17,9 @@ import { StatusButton } from "#app/components/ui/status-button.tsx";
 import { validateCSRF } from "../../utils/csrf.server.js";
 import { checkHoneypot } from "../../utils/honeypot.server.ts";
 import { useIsPending } from "../../utils/misc.tsx";
+import { sessionStorage } from "#app/utils/session.server.ts";
 import { PasswordSchema, UsernameSchema } from "../../utils/user-validation.ts";
+import { prisma } from "#app/utils/db.server.ts";
 
 const LoginFormSchema = z.object({
   username: UsernameSchema,
@@ -26,10 +28,25 @@ const LoginFormSchema = z.object({
 
 export async function action({ request }: LoaderFunctionArgs) {
   const formData = await request.formData();
-  await validateCSRF(formData, request.headers);
+  // await validateCSRF(formData, request.headers);
   checkHoneypot(formData);
   const submission = await parse(formData, {
-    schema: LoginFormSchema,
+    schema: (intent) =>
+      LoginFormSchema.transform(async (data, ctx) => {
+        if (intent !== "submit") return { ...data, user: null };
+        const user = await prisma.user.findUnique({
+          select: { id: true },
+          where: { username: data.username },
+        });
+        if (!user) {
+          ctx.addIssue({
+            code: "custom",
+            message: "Invalid username or password",
+          });
+          return z.NEVER;
+        }
+        return { ...data, user };
+      }),
     async: true,
   });
   // get the password off the payload that's sent back
@@ -40,11 +57,22 @@ export async function action({ request }: LoaderFunctionArgs) {
     delete submission.value?.password;
     return json({ status: "idle", submission } as const);
   }
-  if (!submission.value) {
+  if (!submission.value?.user) {
     return json({ status: "error", submission } as const, { status: 400 });
   }
 
-  return redirect("/");
+  const { user } = submission.value;
+
+  const cookieSession = await sessionStorage.getSession(
+    request.headers.get("cookie"),
+  );
+  cookieSession.set("userId", user.id);
+
+  return redirect("/", {
+    headers: {
+      "set-cookie": await sessionStorage.commitSession(cookieSession),
+    },
+  });
 }
 
 export default function LoginPage() {

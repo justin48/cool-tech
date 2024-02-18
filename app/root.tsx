@@ -25,17 +25,23 @@ import faviconAssetUrl from "./assets/favicon.svg";
 import { ErrorList } from "./components/forms.tsx";
 import { z } from "zod";
 import tailwindStyleSheetUrl from "./styles/tailwind.css";
+import { sessionStorage } from "#app/utils/session.server.ts";
 import { getEnv } from "#app/utils/env.server.ts";
 import { GeneralErrorBoundary } from "#app/components/error-boundary.tsx";
 import { honeypot } from "./utils/honeypot.server.ts";
 import React, { useEffect } from "react";
 import { csrf } from "./utils/csrf.server.ts";
-import { combineHeaders, invariantResponse } from "#app/utils/misc.tsx";
+import {
+  combineHeaders,
+  getUserImgSrc,
+  invariantResponse,
+} from "#app/utils/misc.tsx";
 import { getTheme, setTheme, type Theme } from "./utils/theme.server.ts";
 import { useForm } from "@conform-to/react";
 import { Icon } from "#app/components/ui/icon.tsx";
 import { Spacer } from "#app/components/spacer.tsx";
 import { getToast, type Toast } from "./utils/toast.server.ts";
+import { prisma } from "#app/utils/db.server.ts";
 
 export const links: LinksFunction = () => {
   return [
@@ -49,10 +55,26 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const honeyProps = honeypot.getInputProps();
   const [csrfToken, csrfCookieHeader] = await csrf.commitToken(request);
   const { toast, headers: toastHeaders } = await getToast(request);
+  const cookieSession = await sessionStorage.getSession(
+    request.headers.get("cookie"),
+  );
+  const userId = cookieSession.get("userId");
+  const user = userId
+    ? await prisma.user.findUnique({
+        select: {
+          id: true,
+          name: true,
+          username: true,
+          image: { select: { id: true } },
+        },
+        where: { id: userId },
+      })
+    : null;
 
   return json(
     {
       username: os.userInfo().username,
+      user,
       theme: getTheme(request),
       toast,
       ENV: getEnv(),
@@ -135,6 +157,7 @@ export function Document({
 export function App() {
   const data = useLoaderData<typeof loader>();
   const theme = useTheme();
+  const user = data.user;
   const matches = useMatches();
   const isOnSearchPage = matches.find((m) => m.id === "routes/users+/index");
 
@@ -152,9 +175,29 @@ export function App() {
             </div>
           )}
           <div className="flex items-center gap-10">
-            <Button asChild variant="default" size="sm">
-              <Link to="/login">Log In</Link>
-            </Button>
+            {user ? (
+              <div className="flex items-center gap-2">
+                <Button asChild variant="secondary">
+                  <Link
+                    to={`/users/${user.username}`}
+                    className="flex items-center gap-2"
+                  >
+                    <img
+                      className="h-8 w-8 rounded-full object-cover"
+                      alt={user.name ?? user.username}
+                      src={getUserImgSrc(user.image?.id)}
+                    />
+                    <span className="hidden text-body-sm font-bold sm:block">
+                      {user.name ?? user.username}
+                    </span>
+                  </Link>
+                </Button>
+              </div>
+            ) : (
+              <Button asChild variant="default" size="sm">
+                <Link to="/login">Log In</Link>
+              </Button>
+            )}
           </div>
         </nav>
       </header>
