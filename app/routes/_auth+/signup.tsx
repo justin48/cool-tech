@@ -94,7 +94,6 @@ export async function action({ request }: LoaderFunctionArgs) {
   if (!submission.value?.user) {
     return json({ status: "error", submission } as const, { status: 400 });
   }
-
   const { user } = submission.value;
 
   const cookieSession = await sessionStorage.getSession(
