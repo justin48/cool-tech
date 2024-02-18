@@ -9,8 +9,8 @@ export function getUserImgSrc(imageId?: string | null) {
   return imageId ? `/resources/user-images/${imageId}` : userFallback;
 }
 
-export function getNoteImgSrc(imageId: string) {
-  return `/resources/note-images/${imageId}`;
+export function getTechImgSrc(imageId: string) {
+  return `/resources/tech-images/${imageId}`;
 }
 
 export function getErrorMessage(error: unknown) {
