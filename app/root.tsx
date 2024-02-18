@@ -181,13 +181,10 @@ export default function AppWithProviders() {
         </HoneypotProvider>
     );
 }
-
+const themeFetcherKey = 'theme-fetcher'
 function useTheme() {
 	const data = useLoaderData<typeof loader>()
-	const fetchers = useFetchers()
-	const themeFetcher = fetchers.find(
-		fetcher => fetcher.formData?.get('intent') === 'update-theme'
-	)
+	const themeFetcher = useFetcher<typeof action>({key: themeFetcherKey})
 	const optimisticTheme = themeFetcher?.formData?.get('theme')
 	if (optimisticTheme === 'light' || optimisticTheme === 'dark') {
 		return optimisticTheme
@@ -196,7 +193,7 @@ function useTheme() {
 }
 
 function ThemeSwitch({userPreference}: { userPreference?: Theme }) {
-    const fetcher = useFetcher<typeof action>()
+    const fetcher = useFetcher<typeof action>({key: themeFetcherKey})
 
     const [form] = useForm({
         id: 'theme-switch',
