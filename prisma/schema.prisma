@@ -21,6 +21,7 @@ model User {
   updatedAt DateTime @updatedAt
 
   image UserImage?
+  password Password?
   tech  Tech[]
 }
 
@@ -70,4 +71,10 @@ model TechImage {
 
   // non-unique foreign key
   @@index([techId])
+}
+
+model Password{
+  hash String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId String @unique
 }
